@@ -45,7 +45,10 @@ export function setupSyncUI({ engine, goBackup }) {
     let el = $('sync-pill');
     document.body.classList.toggle('has-sync-pill', v.connected);
     if (!v.connected) { el?.remove(); return; }
-    if (!el) { el = document.createElement('button'); el.id = 'sync-pill'; el.type = 'button'; el.className = 'sync-pill'; el.onclick = () => goBackup(); document.body.appendChild(el); }
+    if (!el) { el = document.createElement('button'); el.id = 'sync-pill'; el.type = 'button'; el.className = 'sync-pill'; el.onclick = () => goBackup(); }
+    // Dans l'en-tête (barre du haut sur PC, à côté du logo sur téléphone) : ne recouvre jamais le contenu.
+    const host = matchMedia('(max-width:720px)').matches ? document.querySelector('.mobile-brand') : document.querySelector('.top .tools');
+    if (host && el.parentElement !== host) host.prepend(el); else if (!host && !el.isConnected) document.body.appendChild(el);
     el.dataset.state = v.status; el.textContent = PILL[v.status] || 'Sync'; el.title = v.message || LABEL[v.status] || ''; el.setAttribute('aria-label', `Synchronisation : ${LABEL[v.status] || v.status}. Ouvrir les réglages.`);
   }
   function render(v = last) {
@@ -97,6 +100,7 @@ export function setupSyncUI({ engine, goBackup }) {
     if (b.dataset.syncRestore) await guarded(b, () => engine.restoreConflict(b.dataset.syncRestore));
     if (b.dataset.syncDismiss) await engine.dismissConflict(b.dataset.syncDismiss);
   });
+  matchMedia('(max-width:720px)').addEventListener('change', () => pill(last));
   addEventListener('online', () => engine.syncNow({ silent: true }));
   addEventListener('focus', () => engine.schedule(500));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) engine.syncNow({ silent: true }); });

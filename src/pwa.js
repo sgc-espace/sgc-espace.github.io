@@ -3,7 +3,7 @@ export function setupPWA({canUpdate}) {
   const $=id=>document.getElementById(id);
   let registration,prompt,reloadRequested=false;
   const info=text=>{$('pwa-status').textContent=text;};
-  function connection(){$('connection-state').textContent=navigator.onLine?'En ligne · données locales':'Hors ligne · données locales';}
+  function connection(){$('connection-state').textContent=navigator.onLine?'':'Hors ligne : vos modifications restent sur cet appareil.';}
   function offer(){if(registration?.waiting){$('pwa-update').hidden=false;info('Nouvelle version prête. Sauvegardez puis activez lorsque vos formulaires sont fermés.');}}
   function request(worker,type){return new Promise((resolve,reject)=>{const channel=new MessageChannel(),timer=setTimeout(()=>reject(Error('Délai de réponse dépassé.')),10000);channel.port1.onmessage=e=>{clearTimeout(timer);channel.port1.close();resolve(e.data);};worker.postMessage({type},[channel.port2]);});}
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();prompt=e;$('install-app').disabled=false;info('Installation proposée par ce navigateur.');});

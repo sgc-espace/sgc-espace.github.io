@@ -29,6 +29,27 @@ function mergeFields(b, l, r) {
   return out;
 }
 
+// Semaine de routine modifiée sur deux appareils : fusion point par point (lot routines).
+// Chaque point est fusionné à trois voies ; l'historique est l'union des deux historiques, triée.
+// Si le même point a été modifié différemment, ou si la semaine a été clôturée d'un côté et
+// modifiée de l'autre, on renonce (null) : la règle générale de conflit s'applique et rien n'est perdu.
+export function mergeWeek(b, l, r) {
+  if (!b) return null;
+  for (const k of ['companyId', 'modelId', 'modelVersion', 'title', 'startDate', 'createdAt', 'closed', 'closedAt'])
+    if (!same(l[k], r[k]) && !same(b[k], l[k]) && !same(b[k], r[k])) return null;
+  if (l.closed !== r.closed) return null;
+  const B = new Map(b.steps.map(x => [x.id, x])), L = new Map(l.steps.map(x => [x.id, x])), R = new Map(r.steps.map(x => [x.id, x]));
+  const ids = [...new Set([...b.steps.map(x => x.id), ...l.steps.map(x => x.id), ...r.steps.map(x => x.id)])], steps = [];
+  for (const id of ids) {
+    const bs = B.get(id), ls = L.get(id), rs = R.get(id);
+    if (!ls || !rs) { if (bs) return null; steps.push(ls || rs); continue; } // suppression de point : non prévu
+    if (same(ls, rs) || same(bs, rs)) steps.push(ls); else if (same(bs, ls)) steps.push(rs); else return null;
+  }
+  const events = [...new Map([...l.events, ...r.events].map(e => [e.id, e])).values()].sort((x, y) => x.at.localeCompare(y.at) || x.id.localeCompare(y.id));
+  const updatedAt = l.updatedAt > r.updatedAt ? l.updatedAt : r.updatedAt;
+  return { ...l, steps, events, updatedAt, closedAt: l.closed ? updatedAt : null };
+}
+
 function mergeCollection(col, base, local, remote, opts, conflicts) {
   const index = list => new Map(list.map(x => [x.id, x]));
   const B = index(get(base, col.path)), L = index(get(local, col.path)), R = index(get(remote, col.path));
@@ -40,7 +61,7 @@ function mergeCollection(col, base, local, remote, opts, conflicts) {
       if (same(l, r)) { out.push(l); continue; }
       if (b && same(b, l)) { out.push(r); continue; }
       if (b && same(b, r)) { out.push(l); continue; }
-      const fields = opts.fieldMerge ? mergeFields(b, l, r) : null;
+      const fields = opts.fieldMerge ? (col.path.join('.') === 'routines.weeks' ? mergeWeek(b, l, r) : null) || mergeFields(b, l, r) : null;
       if (fields) { out.push(fields); continue; }
       const side = newer(l, r), kept = side === 'remote' ? r : l, lost = side === 'remote' ? l : r;
       out.push(kept); record('modifié des deux côtés', kept, lost, side);

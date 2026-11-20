@@ -1,3 +1,4 @@
+import { activeRoutineItems, allRoutineItems } from './routine-items.js';
 // Recherche globale (lot 4, P2) : sociétés (y compris fiche détaillée), tâches, notes et échéances.
 // Insensible aux accents et à la casse ; tous les mots saisis doivent être présents. Les pièces
 // jointes ne sont pas fouillées (seuls leurs titres et noms de fichier le sont).
@@ -29,4 +30,12 @@ export const companyKey = name => norm(name).replace(/[^a-z0-9]+/g, ' ').trim();
 export function findDuplicateCompany(companies, name, exceptId = null) {
   const key = companyKey(name);
   return key ? companies.find(c => c.id !== exceptId && companyKey(c.name) === key) || null : null;
+}
+// Points de routine : semaine en cours et retards par défaut ; toutes les semaines avec l'historique.
+export function searchRoutineItems(state, query, { history = false, limit = 50, today } = {}) {
+  const terms = norm(query).split(/\s+/).filter(Boolean);
+  if (!terms.length) return null;
+  const names = new Map(state.companies.map(c => [c.id, c.name]));
+  const list = (history ? allRoutineItems(state, today) : activeRoutineItems(state, today)).filter(it => { const hay = norm([it.label, it.routineTitle, names.get(it.companyId), it.reason, it.comment].filter(Boolean).join(' ')); return terms.every(t => hay.includes(t)); });
+  return { total: list.length, items: list.slice(0, limit) };
 }

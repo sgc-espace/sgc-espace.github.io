@@ -4,6 +4,7 @@ import {localToday,dayAfter} from './task-views.js';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let selected=monday(localToday()),dirty=false;
 export const routineDirty=()=>dirty;
+export function selectRoutineWeek(date){selected=monday(date);}
 export function leaveRoutines(){if(dirty&&!confirm('Quitter sans enregistrer les modifications de la routine ?'))return false;if(dirty)for(const f of document.querySelectorAll('#routine-model-form,.routine-step')){f.reset();delete f.dataset.dirty;}dirty=false;return true;}
 export function routinesHTML(data,companyId){
  const company=data.companies.find(c=>c.id===companyId),r=data.routines;

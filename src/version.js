@@ -1,2 +1,2 @@
 // Numéro de version affiché dans l'application ; doit rester égal à package.json (test unitaire).
-export const APP_VERSION = '1.3.0';
+export const APP_VERSION = '1.5.0';

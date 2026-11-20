@@ -11,13 +11,28 @@ export function readBackupInfo() {
 function writeBackupInfo(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); return true; } catch { return false; } }
 export function markBackup(at = new Date().toISOString()) { return writeBackupInfo({ ...readBackupInfo(), lastBackupAt: at }); }
 export function backupAgeDays(info = readBackupInfo(), now = Date.now()) { return info.lastBackupAt ? Math.floor((now - Date.parse(info.lastBackupAt)) / 86400000) : null; }
-export function reminderDue(hasData, info = readBackupInfo(), now = Date.now()) { if (!hasData) return false; const age = backupAgeDays(info, now); return age === null || age >= info.reminderDays; }
+// Données non protégées contre l'effacement par le navigateur : rappel au plus tous les 3 jours.
+export const effectiveReminderDays = (info, persisted) => persisted === false ? Math.min(info.reminderDays, 3) : info.reminderDays;
+export function reminderDue(hasData, info = readBackupInfo(), now = Date.now(), persisted = null) { if (!hasData) return false; const age = backupAgeDays(info, now); return age === null || age >= effectiveReminderDays(info, persisted); }
 const when = iso => new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(iso));
 
-export function reminderBanner() {
+export function reminderBanner(persisted = null) {
   const info = readBackupInfo(), age = backupAgeDays(info);
   const text = age === null ? 'Aucune sauvegarde externe enregistrée sur cet appareil.' : `Dernière sauvegarde il y a ${age} jour(s).`;
-  return `<aside class="backup-reminder" role="note"><div><strong>${esc(text)}</strong><span>La synchronisation ne remplace pas une copie externe : gardez un fichier récent hors du navigateur.</span></div><button class="primary" id="reminder-backup">Sauvegarder maintenant</button></aside>`;
+  return `<aside class="backup-reminder" role="note"><div><strong>${esc(text)}</strong><span>${persisted === false ? 'Vos données ne sont pas protégées contre l’effacement par le navigateur : sauvegardez souvent. ' : ''}La synchronisation ne remplace pas une copie externe : gardez un fichier récent hors du navigateur.</span></div><button class="primary" id="reminder-backup">Sauvegarder maintenant</button></aside>`;
+}
+export function protectionHTML(persisted) {
+  if (persisted === true) return '<p class="protection ok"><strong>✓ Données protégées</strong><span>Le navigateur ne les effacera pas pour gagner de la place. Une sauvegarde externe reste nécessaire (perte ou panne de l’appareil).</span></p>';
+  const why = persisted === false ? '<strong>⚠ Données non protégées</strong><span>Si l’appareil manque de place, le navigateur peut effacer les données de l’application. Installez l’application sur l’écran d’accueil puis rouvrez-la : la protection est en général accordée. En attendant, le rappel de sauvegarde passe à 3 jours au plus.</span>'
+    : '<strong>Protection inconnue</strong><span>Ce navigateur n’indique pas si les données sont protégées. Gardez des sauvegardes fréquentes.</span>';
+  return `<p class="protection warn">${why}</p><div class="actions"><button id="protection-install">Comment installer ?</button></div>`;
+}
+export function tokenBanner(v) {
+  if (!v?.connected || !v.tokenExpires) return v?.connected && v.code === 'AUTH' ? '<aside class="backup-reminder token-banner" role="note"><div><strong>Synchronisation arrêtée : jeton GitHub refusé.</strong><span>Créez un nouveau jeton (mêmes réglages), puis « Remplacer le jeton » dans Sauvegarde.</span></div><button class="primary" id="token-banner-open">Remplacer le jeton</button></aside>' : '';
+  const days = Math.ceil((new Date(v.tokenExpires + 'T23:59:59') - Date.now()) / 86400000);
+  if (days > 14 && v.code !== 'AUTH') return '';
+  const text = v.code === 'AUTH' || days < 0 ? 'Synchronisation arrêtée : jeton GitHub expiré ou refusé.' : `Votre jeton GitHub expire dans ${days} jour(s).`;
+  return `<aside class="backup-reminder token-banner" role="note"><div><strong>${esc(text)}</strong><span>Créez un nouveau jeton (mêmes réglages, 90 jours), puis « Remplacer le jeton » dans Sauvegarde. Vos données restent sur cet appareil.</span></div><button class="primary" id="token-banner-open">Remplacer le jeton</button></aside>`;
 }
 export function backupInfoHTML() {
   const info = readBackupInfo();

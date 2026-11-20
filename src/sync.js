@@ -12,11 +12,11 @@ const isEmpty = s => !s.companies.length && !s.tasks.length && !s.notes.length &
 
 export function createSyncEngine({ vault, readState, writeState, isEditing = () => false, safetyCopy = async () => true,
   clientFactory = createGitHubClient, onUpdate = () => {}, now = () => new Date().toISOString(), timers = globalThis }) {
-  const S = { status: 'off', message: '', config: null, key: null, client: null, busy: false, again: false, pending: null, conflicts: [], timer: null, poll: null };
+  const S = { status: 'off', message: '', code: '', config: null, key: null, client: null, busy: false, again: false, pending: null, conflicts: [], timer: null, poll: null };
   const emit = () => { try { onUpdate(view()); } catch { /* affichage seulement */ } };
-  const setStatus = (status, message = '') => { S.status = status; S.message = message; emit(); };
+  const setStatus = (status, message = '', code = '') => { S.status = status; S.message = message; S.code = code; emit(); };
   function view() {
-    return { status: S.status, message: S.message, connected: !!S.config, unlocked: !!S.key, busy: S.busy, repo: S.config?.repo || '',
+    return { status: S.status, message: S.message, code: S.code, connected: !!S.config, unlocked: !!S.key, busy: S.busy, repo: S.config?.repo || '',
       lastSync: S.config?.lastSync || null, tokenExpires: S.config?.tokenExpires || '', remember: !!S.config?.remember, pending: S.pending, conflicts: S.conflicts };
   }
   function schedule(ms = 4000) { if (!S.client || !S.key) return; timers.clearTimeout(S.timer); S.timer = timers.setTimeout(() => syncNow({ silent: true }), ms); }
@@ -119,12 +119,14 @@ export function createSyncEngine({ vault, readState, writeState, isEditing = () 
         }
         let merged = local, conflicts = [];
         if (remoteState && !base) {
+          const restored = !!(await vault.get('restorePending'));
           if (!mode) {
-            S.pending = { remote: countsOf(remoteState), local: countsOf(local), localEmpty: isEmpty(local), savedAt: remoteInfo.savedAt, device: remoteInfo.device };
-            setStatus('ask', isEmpty(local) ? 'Le dépôt contient des données : vérifiez l’aperçu puis récupérez-les.' : 'Le dépôt et cet appareil contiennent des données : choisissez quoi faire.');
+            S.pending = { reason: restored ? 'restore' : 'first', remote: countsOf(remoteState), local: countsOf(local), localEmpty: isEmpty(local), savedAt: remoteInfo.savedAt, device: remoteInfo.device };
+            setStatus('ask', restored ? 'Sauvegarde restaurée : choisissez comment la synchroniser. Rien n’est envoyé ni supprimé sans votre choix.' : isEmpty(local) ? 'Le dépôt contient des données : vérifiez l’aperçu puis récupérez-les.' : 'Le dépôt et cet appareil contiennent des données : choisissez quoi faire.');
             return view();
           }
-          if (mode === 'replace') merged = remoteState; else ({ state: merged, conflicts } = mergeStates(null, local, remoteState));
+          if (mode === 'push' && !restored) throw fail('INPUT', 'Envoi forcé réservé à une restauration.');
+          if (mode === 'replace') merged = remoteState; else if (mode === 'push') merged = local; else ({ state: merged, conflicts } = mergeStates(null, local, remoteState));
         } else if (remoteState) ({ state: merged, conflicts } = mergeStates(base, local, remoteState));
         merged = { ...merged, revision: local.revision };
         let committed = local;
@@ -140,7 +142,7 @@ export function createSyncEngine({ vault, readState, writeState, isEditing = () 
         }
         const at = now(), all = [...conflicts.map(c => ({ ...c, id: crypto.randomUUID(), at })), ...S.conflicts].slice(0, 200);
         const config = { ...cfg, sha, lastSync: at };
-        await vault.setMany({ base: dataOf(committed), config, conflicts: all });
+        await vault.setMany({ base: dataOf(committed), config, conflicts: all, restorePending: undefined });
         S.config = config; S.conflicts = all; S.pending = null;
         setStatus('ok', conflicts.length ? `À jour · ${conflicts.length} conflit(s) à vérifier` : 'À jour');
         return view();
@@ -148,8 +150,9 @@ export function createSyncEngine({ vault, readState, writeState, isEditing = () 
       throw fail('CONFLICT', 'Modifications simultanées répétées : nouvel essai automatique bientôt.');
     } catch (e) {
       const code = e.code || '';
-      if (code === 'BADPASS' || code === 'KEYCHANGED') { S.key = null; S.client = null; stop(); await vault.del('key').catch(() => {}); setStatus('locked', e.message); }
-      else setStatus(code === 'OFFLINE' || code === 'NETWORK' ? 'offline' : 'err', e.message);
+      if (code === 'BADPASS' || code === 'KEYCHANGED') { S.key = null; S.client = null; stop(); await vault.del('key').catch(() => {}); setStatus('locked', e.message, code); }
+      else if (code === 'AUTH') setStatus('err', 'Jeton GitHub refusé : il a probablement expiré ou été révoqué. Créez un nouveau jeton (mêmes réglages) puis « Remplacer le jeton ». Vos données restent sur cet appareil.', code);
+      else setStatus(code === 'OFFLINE' || code === 'NETWORK' ? 'offline' : 'err', e.message, code);
       return view();
     } finally {
       S.busy = false; emit();
@@ -157,6 +160,32 @@ export function createSyncEngine({ vault, readState, writeState, isEditing = () 
     }
   }
 
+  // Remplacement du jeton expiré ou révoqué, sans toucher aux données ni à la phrase secrète.
+  async function replaceToken({ token, tokenExpires = '', passphrase = '' }) {
+    if (!S.config) throw fail('INPUT', 'Synchronisation non configurée.');
+    token = checkToken(token);
+    if (tokenExpires && !/^\d{4}-\d{2}-\d{2}$/.test(tokenExpires)) throw fail('INPUT', 'Date d’expiration du jeton invalide.');
+    const key = S.key || await deriveKey(passphrase, S.config.kdf.salt, S.config.kdf.iterations);
+    await openSecret(S.config.token, key); // vérifie la clé (phrase) avant de remplacer
+    const client = clientFactory({ repo: S.config.repo, token }), info = await client.checkRepo();
+    if (!info.private) throw fail('PUBLIC', 'Ce dépôt est PUBLIC : choisissez un dépôt privé pour vos données.');
+    const config = { ...S.config, token: await sealSecret(token, key), tokenExpires };
+    await activate(config, key, S.config.remember || !!S.key);
+    setStatus('idle', 'Jeton remplacé'); await syncNow({ force: true }); return view();
+  }
+  async function setTokenExpires(date) {
+    if (!S.config) return view();
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw fail('INPUT', 'Date invalide.');
+    S.config = { ...S.config, tokenExpires: date }; await vault.set('config', S.config); emit(); return view();
+  }
+  // Après une restauration : la base commune est oubliée pour qu'aucun élément absent de la
+  // sauvegarde ne soit pris pour une suppression à propager ; l'utilisateur choisit ensuite.
+  async function afterRestore() {
+    if (!S.config) return view();
+    await vault.setMany({ base: undefined, restorePending: true });
+    if (S.client && S.key) return syncNow({ force: true });
+    return view();
+  }
   async function cancelFirst() { S.pending = null; await disconnect(); }
   async function disconnect() { stop(); await vault.clear(); Object.assign(S, { config: null, key: null, client: null, pending: null, conflicts: [] }); setStatus('off'); return view(); }
   async function restoreConflict(id) {
@@ -167,5 +196,5 @@ export function createSyncEngine({ vault, readState, writeState, isEditing = () 
   }
   async function dismissConflict(id) { S.conflicts = S.conflicts.filter(x => x.id !== id); await vault.set('conflicts', S.conflicts); emit(); }
 
-  return { init, connect, unlock, verifyPassphrase, syncNow, schedule, disconnect, cancelFirst, restoreConflict, dismissConflict, view, stop };
+  return { init, afterRestore, replaceToken, setTokenExpires, connect, unlock, verifyPassphrase, syncNow, schedule, disconnect, cancelFirst, restoreConflict, dismissConflict, view, stop };
 }

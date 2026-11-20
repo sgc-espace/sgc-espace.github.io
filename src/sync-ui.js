@@ -19,16 +19,21 @@ const intro = `<div class="section-title"><p class="eyebrow">PC · téléphone �
 
 function formHTML() {
   return `${intro}<details class="sync-steps"><summary>Installation (une seule fois par appareil)</summary><ol class="steps"><li>Sur github.com, créez un dépôt <strong>privé</strong> (par exemple sgc-donnees).</li><li>Settings → Developer settings → Personal access tokens → Fine-grained tokens : limité à ce seul dépôt, permission <strong>Contents : Read and write</strong>, expiration 90 jours. Un jeton par appareil.</li><li>Saisissez ci-dessous le dépôt, le jeton et votre phrase secrète. Une copie de sécurité de cet appareil est téléchargée avant la première synchronisation.</li></ol></details>
-  <form id="sync-form" class="form-grid" autocomplete="off"><label class="full">Dépôt (propriétaire/nom)<input name="repo" required placeholder="proprietaire/sgc-donnees" spellcheck="false" autocapitalize="off"></label><label class="full">Jeton GitHub<input name="token" type="password" required autocomplete="off" spellcheck="false"></label><label>Expiration du jeton (facultatif)<input name="tokenExpires" type="date"></label><span></span><label>Phrase secrète<input name="passphrase" type="password" required minlength="${MIN_PASSPHRASE}" autocomplete="new-password"></label><label>Confirmer la phrase (premier appareil)<input name="confirm" type="password" autocomplete="new-password"></label><label class="check-label full"><input type="checkbox" name="remember" checked><span>Mémoriser la clé sur cet appareil (la phrase secrète elle-même n’est jamais enregistrée).</span></label>
+  <form id="sync-form" class="form-grid" autocomplete="off"><label class="full">Dépôt (propriétaire/nom)<input name="repo" required placeholder="proprietaire/sgc-donnees" spellcheck="false" autocapitalize="off"></label><label class="full">Jeton GitHub<input name="token" type="password" required autocomplete="off" spellcheck="false"></label><label>Expiration du jeton<input name="tokenExpires" type="date" required><small class="muted">Date affichée par GitHub à la création du jeton.</small></label><span></span><label>Phrase secrète<input name="passphrase" type="password" required minlength="${MIN_PASSPHRASE}" autocomplete="new-password"></label><label>Confirmer la phrase (premier appareil)<input name="confirm" type="password" autocomplete="new-password"></label><label class="check-label full"><input type="checkbox" name="remember" checked><span>Mémoriser la clé sur cet appareil (la phrase secrète elle-même n’est jamais enregistrée).</span></label>
   <details class="full sync-reset"><summary>Phrase secrète oubliée ?</summary><p class="helper">Personne ne peut déchiffrer le fichier sans elle. Vous pouvez remplacer le fichier du dépôt par les données de <strong>cet appareil</strong>, chiffrées avec une nouvelle phrase. Les autres appareils devront être reconnectés. Une copie de sécurité est téléchargée avant.</p><label class="check-label"><input type="checkbox" name="reset"><span>Réinitialiser le chiffrement avec la nouvelle phrase saisie ci-dessus</span></label><label>Tapez REMPLACER pour confirmer<input name="resetConfirm" autocomplete="off"></label></details>
   <p id="sync-form-error" class="warning" role="alert" hidden></p><div class="actions full"><button type="submit" class="primary" id="sync-connect">Activer la synchronisation</button></div></form>`;
 }
 function lockedHTML(v) { return `${intro}${stateRows(v)}<form id="sync-unlock" class="form-grid" autocomplete="off"><label class="full">Phrase secrète<input name="passphrase" type="password" required autocomplete="current-password"></label><label class="check-label full"><input type="checkbox" name="remember" ${v.remember ? 'checked' : ''}><span>Mémoriser la clé sur cet appareil</span></label><p id="sync-form-error" class="warning" role="alert" hidden></p><div class="actions full"><button type="submit" class="primary">Déverrouiller</button><button type="button" id="sync-disconnect">Désactiver sur cet appareil</button></div></form>`; }
 function askHTML(v) {
   const p = v.pending, c = x => `${x.companies} société(s) · ${x.tasks} tâche(s) · ${x.notes} note(s) · ${x.deadlines} échéance(s) · ${x.weeks} semaine(s) de routine`;
+  if (p.reason === 'restore') return `${intro}<div class="sync-ask" role="group" aria-labelledby="sync-ask-title"><h4 id="sync-ask-title">Vous venez de restaurer une sauvegarde</h4><p><strong>Sur cet appareil (restauré) :</strong> ${esc(c(p.local))}</p><p><strong>Dans le dépôt :</strong> ${esc(c(p.remote))}<br><small class="muted">Envoyé le ${esc(when(p.savedAt))} par l’appareil ${esc(p.device)}</small></p><p class="helper">Rien n’a encore été envoyé ni supprimé ailleurs. Choisissez :</p><div class="actions sync-choices"><button class="primary" id="sync-push">Envoyer la restauration à tous les appareils<small>Le dépôt est remplacé par cette sauvegarde. Les éléments plus récents seront supprimés des autres appareils.</small></button><button id="sync-merge">Fusionner<small>Garder la sauvegarde ET les éléments plus récents du dépôt. Rien n’est supprimé.</small></button><button id="sync-replace">Annuler la restauration<small>Reprendre les données du dépôt sur cet appareil.</small></button></div></div>`;
   return `${intro}<div class="sync-ask" role="group" aria-labelledby="sync-ask-title"><h4 id="sync-ask-title">Première synchronisation de cet appareil</h4><p><strong>Dans le dépôt :</strong> ${esc(c(p.remote))}<br><small class="muted">Envoyé le ${esc(when(p.savedAt))} par l’appareil ${esc(p.device)}</small></p><p><strong>Sur cet appareil :</strong> ${p.localEmpty ? 'aucune donnée' : esc(c(p.local))}</p><p class="helper">Une copie de sécurité de cet appareil vient d’être téléchargée. Rien n’a encore été modifié.</p><div class="actions"><button class="primary" id="sync-replace">Récupérer les données du dépôt${p.localEmpty ? '' : ' (remplace cet appareil)'}</button>${p.localEmpty ? '' : '<button id="sync-merge">Fusionner avec cet appareil</button>'}<button id="sync-cancel">Annuler</button></div></div>`;
 }
-function onHTML(v) { return `${intro}${stateRows(v)}<div class="actions"><button class="primary" id="sync-now">Synchroniser maintenant</button><button id="sync-disconnect">Désactiver sur cet appareil</button></div><div id="sync-conflicts"></div>`; }
+function tokenHTML(v) {
+  const expiry = v.tokenExpires ? '' : `<form id="sync-expiry-form" class="form-grid sync-expiry" autocomplete="off"><label>Date d’expiration du jeton actuel<input name="tokenExpires" type="date" required></label><div class="actions"><button type="submit">Enregistrer la date</button></div><p class="helper full">Indiquez-la pour être prévenu 14 jours avant. Elle figure sur github.com, dans la liste de vos jetons.</p></form>`;
+  return `${expiry}<details class="sync-token" id="sync-token" ${v.code === 'AUTH' ? 'open' : ''}><summary>Remplacer le jeton GitHub</summary><form id="sync-token-form" class="form-grid" autocomplete="off"><ol class="steps full"><li>Sur github.com : avatar → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token.</li><li>Dépôt <strong>${esc(v.repo)}</strong> seulement, permission <strong>Contents : Read and write</strong>, expiration 90 jours.</li><li>Collez-le ci-dessous. Vos données et votre phrase secrète ne changent pas.</li></ol><label class="full">Nouveau jeton<input name="token" type="password" required autocomplete="off" spellcheck="false"></label><label>Expiration du nouveau jeton<input name="tokenExpires" type="date" required></label><p id="sync-token-error" class="warning full" role="alert" hidden></p><div class="actions full"><button type="submit" class="primary">Remplacer le jeton</button></div></form></details>`;
+}
+function onHTML(v) { return `${intro}${stateRows(v)}<div class="actions"><button class="primary" id="sync-now">Synchroniser maintenant</button><button id="sync-disconnect">Désactiver sur cet appareil</button></div>${tokenHTML(v)}<div id="sync-conflicts"></div>`; }
 function conflictsHTML(v) {
   if (!v.conflicts.length) return '';
   return `<details class="sync-conflicts" open><summary>Conflits à vérifier (${v.conflicts.length})</summary><ul>${v.conflicts.map(c => `<li><div><strong>${esc(c.label)} · ${esc(c.name)}</strong><small>${esc(c.kind)} · ${esc(when(c.at))} · version ${c.keptSide === 'remote' ? 'de l’autre appareil' : 'de cet appareil'} gardée</small></div><div class="actions">${c.lost ? `<button data-sync-restore="${esc(c.id)}">Rétablir l’autre version</button>` : ''}<button data-sync-dismiss="${esc(c.id)}">Marquer comme vu</button></div></li>`).join('')}</ul></details>`;
@@ -53,6 +58,8 @@ export function setupSyncUI({ engine, goBackup }) {
     if ($('sync-message')) $('sync-message').textContent = v.message && v.status !== 'ok' ? v.message : '';
     if ($('sync-conflicts')) $('sync-conflicts').innerHTML = conflictsHTML(v);
     if ($('sync-now')) $('sync-now').disabled = v.busy;
+    if (v.code === 'AUTH' && $('sync-token')) $('sync-token').open = true;
+    if (v.tokenExpires && $('sync-expiry-form')) card.dataset.mode = '';
   }
   const formError = msg => { const e = $('sync-form-error'); if (e) { e.textContent = msg || ''; e.hidden = !msg; } };
   async function guarded(button, fn) { if (button) button.disabled = true; formError(''); try { await fn(); } catch (e) { formError(e.message); } finally { if (button && button.isConnected) button.disabled = false; } }
@@ -64,6 +71,16 @@ export function setupSyncUI({ engine, goBackup }) {
       if (reset && d.resetConfirm.trim() !== 'REMPLACER') { formError('Tapez REMPLACER pour confirmer la réinitialisation.'); return; }
       await guarded($('sync-connect'), async () => { await engine.connect({ repo: d.repo, token: d.token, passphrase: d.passphrase, confirm: d.confirm, tokenExpires: d.tokenExpires, remember: f.elements.remember.checked, reset }); });
     }
+    if (e.target.id === 'sync-token-form' || e.target.id === 'sync-expiry-form') {
+      e.preventDefault(); const f = e.target, d = Object.fromEntries(new FormData(f)), b = f.querySelector('button[type=submit]'), err = $('sync-token-error');
+      b.disabled = true; if (err) err.hidden = true;
+      try {
+        if (f.id === 'sync-expiry-form') await engine.setTokenExpires(d.tokenExpires);
+        else await engine.replaceToken({ token: d.token, tokenExpires: d.tokenExpires });
+        $('sync-card').dataset.mode = ''; render(engine.view());
+      } catch (x) { if (err) { err.textContent = x.message; err.hidden = false; } else formError(x.message); }
+      finally { if (b.isConnected) b.disabled = false; }
+    }
     if (e.target.id === 'sync-unlock') {
       e.preventDefault(); const f = e.target;
       await guarded(f.querySelector('button[type=submit]'), async () => { await engine.unlock(f.elements.passphrase.value, f.elements.remember.checked); });
@@ -73,6 +90,7 @@ export function setupSyncUI({ engine, goBackup }) {
     const b = e.target.closest('button'); if (!b) return;
     if (b.id === 'sync-now') await engine.syncNow({ force: true });
     if (b.id === 'sync-replace') await engine.syncNow({ force: true, mode: 'replace' });
+    if (b.id === 'sync-push' && window.confirm('Remplacer le dépôt par cette sauvegarde ? Les éléments plus récents absents de la sauvegarde seront supprimés de tous les appareils.')) await engine.syncNow({ force: true, mode: 'push' });
     if (b.id === 'sync-merge') await engine.syncNow({ force: true, mode: 'merge' });
     if (b.id === 'sync-cancel') await engine.cancelFirst();
     if (b.id === 'sync-disconnect' && window.confirm('Désactiver la synchronisation sur cet appareil ? Les données de cet appareil sont conservées ; le fichier chiffré du dépôt n’est pas supprimé.')) await engine.disconnect();
@@ -82,5 +100,5 @@ export function setupSyncUI({ engine, goBackup }) {
   addEventListener('online', () => engine.syncNow({ silent: true }));
   addEventListener('focus', () => engine.schedule(500));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) engine.syncNow({ silent: true }); });
-  return { render };
+  return { render, goBackup };
 }

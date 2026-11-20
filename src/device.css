@@ -37,3 +37,14 @@
 body.app-locked .shell,body.app-locked dialog,body.app-locked .sync-pill{visibility:hidden}
 body.app-locked{overflow:hidden}
 body.has-sync-pill .page{padding-bottom:72px}
+.sync-choices{display:grid;gap:10px}
+.sync-choices button{display:grid;gap:4px;text-align:left;min-height:56px;padding:12px 14px}
+.sync-choices small{font-weight:400;font-size:.82rem;opacity:.92}
+.protection{display:grid;gap:4px;padding:12px 14px;border-radius:12px;margin:8px 0;border:1px solid var(--line)}
+.protection.ok{background:#e6f4ea;color:#14532d;border-color:#9fd3ae}
+.protection.warn{background:#fff4e0;color:#4a2a05;border-color:#f3c98b}
+.protection span{font-size:.86rem}
+.sync-token,.sync-expiry{margin:12px 0}
+.sync-token summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.token-banner{background:#fdecec;color:#7f1d1d;border-color:#f1aaaa}
+.sync-choices button.primary small{color:#fff;opacity:1}

@@ -1,0 +1,39 @@
+/* Synchronisation, verrouillage PIN et rappel de sauvegarde — opaques et lisibles (DESIGN.md). */
+.device-cards{margin-top:18px}
+.sync-table{width:100%;border-collapse:collapse;margin:12px 0}
+.sync-table th,.sync-table td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;font-size:.9rem;vertical-align:top}
+.sync-table th{color:var(--muted);font-weight:600;width:44%}
+.sync-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:700;font-size:.8rem;background:var(--tint);color:var(--ink);border:1px solid var(--line)}
+.sync-badge[data-state=ok]{background:#e6f4ea;color:#14532d;border-color:#9fd3ae}
+.sync-badge[data-state=err],.sync-badge[data-state=locked]{background:#fdecec;color:#7f1d1d;border-color:#f1aaaa}
+.sync-badge[data-state=offline],.sync-badge[data-state=ask],.sync-badge[data-state=sync]{background:#fff4e0;color:#78350f;border-color:#f3c98b}
+.sync-message:empty{display:none}
+.sync-message{margin:4px 0 12px;font-size:.88rem;color:var(--ink)}
+.sync-warning{color:var(--error)}
+.sync-steps,.sync-reset,.sync-conflicts{margin:12px 0}
+.sync-steps summary,.sync-reset summary,.sync-conflicts summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.sync-ask{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--panel)}
+.sync-ask h4{margin:0 0 8px}
+.sync-conflicts ul{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:10px}
+.sync-conflicts li{border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:8px;background:var(--panel)}
+.sync-conflicts li small{display:block;color:var(--muted)}
+.sync-pill{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:40;min-height:36px;padding:6px 14px;border-radius:999px;border:1px solid transparent;font:600 .8rem/1.2 inherit;color:#fff;background:#4b5563;box-shadow:0 2px 10px #0003;cursor:pointer;width:auto}
+.sync-pill[data-state=ok]{background:#15803d}
+.sync-pill[data-state=sync],.sync-pill[data-state=idle]{background:#2D348B}
+.sync-pill[data-state=err],.sync-pill[data-state=locked]{background:#b91c1c}
+.sync-pill[data-state=offline],.sync-pill[data-state=ask]{background:#92400e}
+@media(max-width:720px){.sync-pill{bottom:calc(92px + env(safe-area-inset-bottom,0px));right:10px}}
+.backup-reminder{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 16px;margin:0 0 16px;border-radius:16px;background:#fff4e0;color:#4a2a05;border:1px solid #f3c98b}
+.backup-reminder div{display:grid;gap:4px}.backup-reminder span{font-size:.85rem}
+.backup-last{margin:0 0 8px}
+.lock-screen{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:16px;background:var(--bg,#f5f7fc)}
+.lock-screen[hidden]{display:none}
+.lock-box{width:min(380px,100%);display:grid;gap:14px;padding:26px 22px;border-radius:24px;background:var(--panel,#fff);border:1px solid var(--line);box-shadow:var(--shadow)}
+.lock-box img{width:160px;height:auto;justify-self:center}
+.lock-box h2{margin:0;text-align:center;font-size:1.15rem}
+.lock-box input{font-size:1.3rem;letter-spacing:.3em;text-align:center}
+@media (forced-colors:active){.sync-pill,.sync-badge,.backup-reminder{border:1px solid CanvasText}}
+@media print{.sync-pill,.lock-screen{display:none!important}}
+body.app-locked .shell,body.app-locked dialog,body.app-locked .sync-pill{visibility:hidden}
+body.app-locked{overflow:hidden}
+body.has-sync-pill .page{padding-bottom:72px}

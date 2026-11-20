@@ -15,7 +15,7 @@ export const delayAfter = failures => failures < 5 ? 0 : Math.min(30000 * 2 ** (
 
 export function setupLock({ verifyPassphrase, hasSync }) {
   let locked = false, timer = null, hiddenAt = 0;
-  const cfg = () => readLock(), minutes = () => cfg()?.minutes || 5;
+  const cfg = () => readLock(), minutes = () => { const m = cfg()?.minutes; return [0, 1, 5, 15, 30].includes(m) ? m : 5; };
   function overlay() {
     let el = $('lock-screen'); if (el) return el;
     el = document.createElement('div'); el.id = 'lock-screen'; el.className = 'lock-screen'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'lock-title');
@@ -39,7 +39,7 @@ export function setupLock({ verifyPassphrase, hasSync }) {
     document.querySelector('.shell')?.removeAttribute('inert'); document.querySelectorAll('[inert]').forEach(d => d.removeAttribute('inert'));
     arm();
   }
-  function arm() { clearTimeout(timer); if (cfg() && !locked) timer = setTimeout(lock, minutes() * 60000); }
+  function arm() { clearTimeout(timer); if (cfg() && !locked && minutes() > 0) timer = setTimeout(lock, minutes() * 60000); }
   async function tryPin(pin) {
     const c = cfg(); if (!c) { unlock(); return; }
     const wait = (c.blockedUntil || 0) - Date.now();
@@ -61,7 +61,7 @@ export function setupLock({ verifyPassphrase, hasSync }) {
   document.addEventListener('toggle', e => { if (e.target.id === 'lock-forgot' && e.target.open) $('lock-forgot-body').innerHTML = forgotHTML(); }, true);
   for (const ev of ['pointerdown', 'keydown', 'touchstart']) addEventListener(ev, () => { if (!locked) arm(); }, { passive: true });
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) hiddenAt = Date.now();
+    if (document.hidden) { hiddenAt = Date.now(); if (cfg() && minutes() === 0) lock(); } // 0 = verrouillage immédiat en arrière-plan
     else if (cfg() && hiddenAt && Date.now() - hiddenAt >= minutes() * 60000) lock();
   });
   if (cfg()) lock();
@@ -70,6 +70,7 @@ export function setupLock({ verifyPassphrase, hasSync }) {
     isLocked: () => locked, isEnabled: () => !!cfg(), minutes, lockNow: lock,
     async setPin(pin, confirm, mins) {
       if (!PIN_PATTERN.test(pin)) throw Error('Le code PIN doit contenir 4 à 8 chiffres.');
+      if (![0, 1, 5, 15, 30].includes(mins)) throw Error('Délai de verrouillage invalide.');
       if (pin !== confirm) throw Error('Les deux codes ne sont pas identiques.');
       const salt = b64(crypto.getRandomValues(new Uint8Array(16)));
       if (!writeLock({ salt, iterations: ITER, hash: await pinHash(pin, salt), minutes: mins, failures: 0, blockedUntil: 0 })) throw Error('Enregistrement du code impossible sur ce navigateur.');

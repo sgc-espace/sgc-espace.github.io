@@ -67,7 +67,7 @@ export function createSyncEngine({ vault, readState, writeState, isEditing = () 
         kdf = { name: 'PBKDF2', hash: 'SHA-256', iterations: KDF_ITERATIONS, salt: randomSalt() };
         key = await deriveKey(passphrase, kdf.salt, kdf.iterations);
       }
-      if (!(await safetyCopy())) throw fail('SAFETY', 'Copie de sécurité de cet appareil non confirmée : synchronisation non activée.');
+      if (!(await safetyCopy({ key, kdf }))) throw fail('SAFETY', 'Copie de sécurité de cet appareil non confirmée : synchronisation non activée.');
       const config = { repo, kdf, token: await sealSecret(token, key), deviceId: [...crypto.getRandomValues(new Uint8Array(4))].map(b => b.toString(16).padStart(2, '0')).join(''), tokenExpires, remember: !!remember, lastSync: null, sha: null };
       await vault.setMany({ base: undefined, conflicts: [] }); S.conflicts = []; S.pending = null;
       await activate(config, key, remember);
@@ -186,6 +186,8 @@ export function createSyncEngine({ vault, readState, writeState, isEditing = () 
     if (S.client && S.key) return syncNow({ force: true });
     return view();
   }
+  // Clé de chiffrement des sauvegardes : celle de la synchronisation, si l'appareil est déverrouillé.
+  function backupKey() { return S.key && S.config ? { key: S.key, kdf: S.config.kdf } : null; }
   async function cancelFirst() { S.pending = null; await disconnect(); }
   async function disconnect() { stop(); await vault.clear(); Object.assign(S, { config: null, key: null, client: null, pending: null, conflicts: [] }); setStatus('off'); return view(); }
   async function restoreConflict(id) {
@@ -196,5 +198,5 @@ export function createSyncEngine({ vault, readState, writeState, isEditing = () 
   }
   async function dismissConflict(id) { S.conflicts = S.conflicts.filter(x => x.id !== id); await vault.set('conflicts', S.conflicts); emit(); }
 
-  return { init, afterRestore, replaceToken, setTokenExpires, connect, unlock, verifyPassphrase, syncNow, schedule, disconnect, cancelFirst, restoreConflict, dismissConflict, view, stop };
+  return { init, backupKey, afterRestore, replaceToken, setTokenExpires, connect, unlock, verifyPassphrase, syncNow, schedule, disconnect, cancelFirst, restoreConflict, dismissConflict, view, stop };
 }

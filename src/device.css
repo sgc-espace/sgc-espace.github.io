@@ -48,3 +48,7 @@ body.has-sync-pill .page{padding-bottom:72px}
 .sync-token summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
 .token-banner{background:#fdecec;color:#7f1d1d;border-color:#f1aaaa}
 .sync-choices button.primary small{color:#fff;opacity:1}
+.lost-device{margin-top:16px;border-top:1px solid var(--line);padding-top:8px}
+.lost-device summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.lost-device li{margin:6px 0}
+#backup-encryption{margin:12px 0}

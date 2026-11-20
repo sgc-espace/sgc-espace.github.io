@@ -52,3 +52,10 @@ body.has-sync-pill .page{padding-bottom:72px}
 .lost-device summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
 .lost-device li{margin:6px 0}
 #backup-encryption{margin:12px 0}
+.ics-help{margin:0 0 14px}
+.ics-help summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.search-results{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.search-list{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:8px}
+.search-list button{width:100%;display:grid;gap:3px;text-align:left;min-height:52px;padding:10px 12px}
+.search-list small{color:var(--muted);font-weight:400}
+.search-field{flex:1;min-width:0}.search-field input{width:100%}

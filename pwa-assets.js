@@ -1,12 +1,12 @@
 self.SGC_BUILD = {
-  "version": "1.2.0-site",
-  "cacheName": "sgc-organisation-shell-9612eee512e8aa0b",
+  "version": "1.3.0-site",
+  "cacheName": "sgc-organisation-shell-0bbe5fb795442618",
   "files": {
-    "./index.html": "fe64c15517a1b9b1baf611cdabf34c07cb9f5a139bd60d8df8e5ee3c5ec9b61a",
+    "./index.html": "56c77dfb583fdba6aa6f5a5f670b2cc34aae8e3e2c62cbe70dd29ecf9f58ba5c",
     "./manifest.webmanifest": "ae921029529a0f2880a440e14b6fe0e8e3ad4a6555800b6c0966273a7b276f3c",
     "./offline.html": "4edfbeb3e87c446ccfe5eb9fd7f64eda7d434693a51c858484a4daa0a21b0120",
     "./report.html": "5585c80f49eb847910851840a216b630039fe2eda02c04f052cb8e8a0a15cc58",
-    "./src/app.js": "fd5c6dfac32adf9ca936ab79f87256c487d7f47b9ca78e983bb6c69e4ff7515f",
+    "./src/app.js": "35a0b3ad7c8a1562adbc69d801f7c209e1ff17a24f25ef06d1938ea0c5636bdc",
     "./src/assets/pwa/icon-192.png": "d4c86927868bcc64ba0804729494ab674773fd6bdb550a450ac5d77ed531142f",
     "./src/assets/pwa/icon-512.png": "737589b586873d52c4471ee28077651c0b96b1986a4b920bcc2bd00ab6550202",
     "./src/assets/pwa/maskable-192.png": "14b5704a6b41c094021dbd4e5cdc8c419a6126ab869a37acdd9fd6afe3c53800",
@@ -22,16 +22,17 @@ self.SGC_BUILD = {
     "./src/dashboard-ui.js": "c0d6daa3edcf8637a9c381e84dec41c4da63ecc09598322507d4b3d53265712b",
     "./src/dashboard.js": "ad2dbb8c49ed44d2c5394e2641928c0598064ebda1a7de71a901590ddce61630",
     "./src/device-ui.js": "d003130c0c9dd47c89f2b07d3e07db5dae916f500d4857fe16b51a60754f3f6f",
-    "./src/device.css": "2aa1c4bdc6667754cec99e6ce984183f06ced74ad98d4d274aeedfcc4d1b284a",
+    "./src/device.css": "3838fddad65571e8c9597fd5beb4164262bac407d949c67d02b71a1afdc3d6c4",
     "./src/documents.js": "57c45867a3fa9cebcb0dc71f837f3efde42bfa773222e648a1ed4b5f091d5f58",
     "./src/domain.js": "52a5cb757d38a0a97466edca02a78b9c25fa017112205535f6b2486227305ae1",
     "./src/export-model.js": "0ee4a3996479e30bee5ffeef5586d978e70947595d496e962ca28e6efcd73513",
     "./src/export-ooxml.js": "99ee7ce960af62d0a61e8da17a0ae3904b483d356642b2907e86047c6398093b",
     "./src/export-zip.js": "4a07cc73407edab687b7d69d45f3b080f0acef17107aaa6ce2f300a4f19433dc",
     "./src/exports.js": "26e054e4bd91ab1666bb694b5b8d75bf1ea903641241ecba270668836f111c0e",
+    "./src/ics.js": "5f6c5cc8cb9597975ff65438f9939c95de894ebbf22f5cdf5723bbf6c6e3c32c",
     "./src/liquid-glass-v2.css": "d0758a13a527b91292eef3d5c094584d6d1bccd37388d83d2dd0a2f66cabd09e",
     "./src/lock.js": "2336b9ef91dbc834bf06ad2aa267708f6de28a10013b70d3d492aaa42c0adcd8",
-    "./src/organiser-ui.js": "7194e704edbcd00a13cf29665bb82994e09fcdc7aabb8a1787f8c51c59340d86",
+    "./src/organiser-ui.js": "34f0552299f81a1e4c8f2b7e5ccffbf51dcba64f3ed9936dca831911ac8190bd",
     "./src/organiser.js": "f595f255751a24c66e7d734a0360faeddab37d2da35904b9361d0a09c01d2e2a",
     "./src/preferences.js": "d2e84bf13c52ae0db6282d3d0aec9398fa7355dfb7e5723cafc7cb1f9c6b83dd",
     "./src/pwa.js": "2797982daa6fb5fb3a23a72864e7297208635933456ac6a659dd191e48d96663",
@@ -39,6 +40,7 @@ self.SGC_BUILD = {
     "./src/report.js": "7cdfdd9d5b365aaf66cad6bcc2bd3023d2df7d1d1e80b9d1dc2ad427af561ddc",
     "./src/routines-ui.js": "f2be0d0df778aef1515e2da7355f74c5d448e8cb245e53ac67c985314e274b3f",
     "./src/routines.js": "af40f12a2c1da52947a86e3c81b336872fd1796e2c63c1f519fb834ade356004",
+    "./src/search.js": "d0941b32dd3ba7b116664c24020eff468a1aa763766d032d4726a4c11a3d2eb8",
     "./src/storage.js": "aabac3a7c74fd78f33795a5ff852e64522b9fe0187b2ba0ff0126cc5e5796194",
     "./src/styles.css": "9fc462c13d3658176d5c69cd1b3747232911c86550a0899d4a178bfb2460795c",
     "./src/sync-crypto.js": "71276c16ee1caf3f60256db8739d5dc2df3560eaea5ad7b592bf1687a3ae6470",
@@ -50,6 +52,6 @@ self.SGC_BUILD = {
     "./src/task-views.js": "3c1d7535986d09ebab4eb6be37a12d860768e18e80dda784fe1372a09782752e",
     "./src/task-workspace.js": "0fe307f1e0ad2a3b32cb420099cb311f8383fa5bfc4f4f05c74544d86f1e5866",
     "./src/ui-icons.js": "a783ebbfd9b0997d822a678f97a501050189c3073556db434ef4b207b481b541",
-    "./src/version.js": "12d4b19a35539816a66c00428840b2b4424fa288f1669b2d57397b111de0b5b8"
+    "./src/version.js": "d82e835c425de3a6e875632f510f6cb256fa0c4cf9c369e37a77ac4a92113f55"
   }
 };
